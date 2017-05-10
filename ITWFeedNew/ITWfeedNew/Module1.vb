@@ -4060,17 +4060,25 @@ Module Module1
             End If
 
             Dim IN114 As String = dictNVP("AuthNum")
-            Dim IN114array() = IN114.Split("^")
+            Dim IN114array() = IN114.Split("~")
             Dim position As Integer
-
+            Dim fromDate = ""
+            Dim toDate = ""
+            Dim Authcode = ""
             With objDBCommand3
                 For Each value As String In IN114array
                     position += 1
-                    Dim valueArray() = value.Split("~")
+                    Dim valueArray() = value.Split("^")
 
-                    Dim Authcode = valueArray(0)
-                    Dim fromDate = valueArray(1)
-                    Dim toDate = valueArray(2)
+                    If valueArray(0) <> "" Then
+                        Authcode = valueArray(0)
+                    End If
+                    If value(1) <> "" Then
+                        fromDate = valueArray(1)
+                    End If
+                    If value(2) <> "" Then
+                        toDate = valueArray(2)
+                    End If
 
                     .Connection = conn
                     .Connection.Open()
@@ -4080,9 +4088,9 @@ Module Module1
 
                     .Parameters.AddWithValue("@InsID", Id)
                     .Parameters.AddWithValue("@positionNum", position)
-                    .Parameters.AddWithValue("@AuthCode", valueArray(0))
-                    .Parameters.AddWithValue("@fromDate", valueArray(1))
-                    .Parameters.AddWithValue("@toDate", valueArray(2))
+                    .Parameters.AddWithValue("@AuthCode", Authcode)
+                    .Parameters.AddWithValue("@fromDate", fromDate)
+                    .Parameters.AddWithValue("@toDate", toDate)
                     If dreader.HasRows Then 'Update   
                         .Parameters.AddWithValue("@insert", "Update")
                     Else 'Insert
