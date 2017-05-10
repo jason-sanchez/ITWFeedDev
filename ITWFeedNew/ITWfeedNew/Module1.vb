@@ -461,7 +461,8 @@ Module Module1
                     '20120429 - added star_plancode,conum and company name
                     '20140528 Added AuditNotes from ZIN_9
                     sql = sql & "(epnum, iPlanCode, iplancode2, coNum, STAR_Plancode, coname, subname, policyNum, "
-                    sql = sql & "authNum1, theGroup, PIssue, aprimary, Fclass, AuditNotes, reqCert, " '20140528
+                    'sql = sql & "authNum1, theGroup, PIssue, aprimary, Fclass, AuditNotes, reqCert, " '20140528
+                    sql = sql & "theGroup, PIssue, aprimary, Fclass, AuditNotes, reqCert, " '20140528
                     '20151215 - add insuredSex and InsuredDOB
                     sql = sql & "InsuredDOB, InsuredSex,"
 
@@ -484,7 +485,8 @@ Module Module1
 
                     insertString(strSubName)
                     insertString(dictNVP.Item("PolicyNumber" & tempStr))
-                    insertString(Replace(dictNVP.Item("AuthNum" & tempStr), "'", "''"))
+                    '20170510 - Removed AuthNum Process using Process IN1_14
+                    'insertString(Replace(dictNVP.Item("AuthNum" & tempStr), "'", "''"))
                     insertString(Replace(dictNVP("group" & tempStr), "'", "''"))
 
                     insertString(strPolicyIssueDate)
@@ -520,8 +522,11 @@ Module Module1
                     updatecommand.ExecuteNonQuery()
                     myConnection.Close()
                 End If 'If Not iplancodeExists
-
+                '20170510 - Removed AuthNum Process using Process IN1_14
+                ProcessIN1_14(dictNVP, dictNVP("IN1_2"))
             Next 'i to gblInsCount
+
+
         Catch ex As Exception
             globalError = True
 
@@ -2720,10 +2725,10 @@ Module Module1
                                 If Len(dictNVP.Item("PolicyNumber" & tempstr)) > 0 Then
                                     sql = sql & ", policyNum = '" & Replace(dictNVP.Item("PolicyNumber" & tempstr), "'", "''") & "'"
                                 End If
-
-                                If Len(dictNVP.Item("AuthNum" & tempstr)) > 0 Then
-                                    sql = sql & ", authnum1 = '" & Replace(dictNVP.Item("AuthNum" & tempstr), "'", "''") & "'"
-                                End If
+                                '20170510 - Removed AuthNum Process using Process IN1_14
+                                'If Len(dictNVP.Item("AuthNum" & tempstr)) > 0 Then
+                                'sql = sql & ", authnum1 = '" & Replace(dictNVP.Item("AuthNum" & tempstr), "'", "''") & "'"
+                                'End If
 
                                 '20130502 - changed name routine to handle double quotes
                                 tempstr2 = ""
@@ -2778,8 +2783,10 @@ Module Module1
                             End If              'If iPlanCodeExists Then
 
                         End If                  'Len(dictNVP.Item("iplancode" & tempstr)) >= 3
+                        ProcessIN1_14(dictNVP, dictNVP("IN1_2"))
                     Next                        'gblInsCount
                 End If                          'If ((updateit) And (visitPaNumExists))
+
             End If                              'If (bolProcessThis)
 
         Catch ex As Exception
