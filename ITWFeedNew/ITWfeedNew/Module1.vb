@@ -128,8 +128,8 @@ Module Module1
 
     'Public objIniFile As New INIFile("d:\W3Production\HL7Mapper.ini") '20140817
     'Public objIniFile As New INIFile("C:\W3Feeds\HL7Mapper.ini") '20140817
-    Public objIniFile As New INIFile("C:\W3Feeds\HL7Mapper.ini")
-    'Public objIniFile As New INIFile("C:\KY1 Test Environment\HL7Mapper.ini") '20140817
+    'Public objIniFile As New INIFile("C:\W3Feeds\HL7Mapper.ini")
+    Public objIniFile As New INIFile("C:\KY1 Test Environment\HL7Mapper.ini") '20140817
     Dim strInputDirectory As String = ""
     Dim strOutputDirectory As String = ""
     '20140205 - add log file location
@@ -522,9 +522,11 @@ Module Module1
                     myConnection.Open()
                     updatecommand.ExecuteNonQuery()
                     myConnection.Close()
+
+                    ProcessIN1_14(dictNVP)
                 End If 'If Not iplancodeExists
                 '20170510 - Removed AuthNum Process using Process IN1_14
-                ProcessIN1_14(dictNVP, dictNVP("IN1_2"))
+
             Next 'i to gblInsCount
 
 
@@ -2778,13 +2780,14 @@ Module Module1
                                 updatecommand.ExecuteNonQuery()
                                 myConnection.Close()
 
+                                ProcessIN1_14(dictNVP)
                             Else                'iPlancode does not exist
 
                                 Call insertInsurer(dictNVP)
                             End If              'If iPlanCodeExists Then
 
                         End If                  'Len(dictNVP.Item("iplancode" & tempstr)) >= 3
-                        ProcessIN1_14(dictNVP, dictNVP("IN1_2"))
+
                     Next                        'gblInsCount
                 End If                          'If ((updateit) And (visitPaNumExists))
 
@@ -4022,7 +4025,7 @@ Module Module1
     End Sub
 
     '20170329
-    Public Sub ProcessIN1_14(ByVal dictNVP As Hashtable, ByVal plancode As String)
+    Public Sub ProcessIN1_14(ByVal dictNVP As Hashtable)
 
         'check to see if records exist
         'Call dbo.smc_InsAuthSelect
@@ -4032,82 +4035,95 @@ Module Module1
         Dim objDBCommand3 As New SqlCommand
         Dim dreader As SqlDataReader
         Dim dreader2 As SqlDataReader
+        Dim sql As String = ""
+
+        Dim plancode As String = dictNVP.Item("iplancode")
+        Dim plancode2 As String = dictNVP.Item("iplancode2")
+        Dim fullcode As String = plancode2 & plancode
+        Dim panum As String = dictNVP.Item("panum")
+        Dim I As String = ""
+        Dim ID As Integer
+        Dim insert As Boolean = True
 
         Using conn As New SqlConnection(connectionString)
             With objDBCommand
 
                 .Connection = conn
                 .Connection.Open()
-                .CommandText = "dbo.smc_InsAuthSelect"
-                .CommandType = CommandType.StoredProcedure
-                .Parameters.Clear()
 
-                .Parameters.AddWithValue("@plancode", plancode)
-                .Parameters.AddWithValue("@panum", dictNVP.Item("panum"))
-                .Parameters.AddWithValue("@SorR", "Receive")
-
+                sql = "Select ID "
+                sql += " FROM [03Insurer] i "
+                sql += " INNER JOIN [001Episode] e on e.epnum  = i.epnum "
+                sql += " WHERE i.iplancode = '" & fullcode & "' "
+                sql += " and e.panum = '" & panum & "'"
+                .CommandText = sql
                 dreader = objDBCommand.ExecuteReader()
-            End With
+                While dreader.Read
+                    I = dreader("ID")
+                End While
 
-            Dim Id As Integer
-            If dreader.HasRows Then
-                Id = Convert.ToInt32(dreader)
-            Else
+            End With
+        End Using
+        If I <> "" Then
+            Using conn As New SqlConnection(connectionString)
+                ID = Convert.ToInt32(I)
                 With objDBCommand2
                     .Connection = conn
                     .Connection.Open()
-                    .CommandText = "dbo.smc_GetInsID"
-                    .CommandType = CommandType.StoredProcedure
-                    .Parameters.Clear()
 
-                    .Parameters.AddWithValue("@plancode", plancode)
-                    .Parameters.AddWithValue("@panum", dictNVP.Item("panum"))
-                    dreader2 = objDBCommand2.ExecuteReader()
-                    Id = Convert.ToInt32(dreader2)
+                    sql += "DELETE FROM [03InsAuthReceive] "
+                    sql += " WHERE INSID = '" & ID & "' "
+                    .CommandText = sql
+                    objDBCommand2.ExecuteNonQuery()
                 End With
-            End If
+            End Using
 
-            Dim IN114 As String = dictNVP("AuthNum")
-            Dim IN114array() = IN114.Split("~")
-            Dim position As Integer
-            Dim fromDate = ""
-            Dim toDate = ""
-            Dim Authcode = ""
-            With objDBCommand3
-                For Each value As String In IN114array
-                    position += 1
-                    Dim valueArray() = value.Split("^")
 
-                    If valueArray(0) <> "" Then
-                        Authcode = valueArray(0)
-                    End If
-                    If value(1) <> "" Then
-                        fromDate = valueArray(1)
-                    End If
-                    If value(2) <> "" Then
-                        toDate = valueArray(2)
-                    End If
-
+            Using conn As New SqlConnection(connectionString)
+                With objDBCommand3
                     .Connection = conn
                     .Connection.Open()
-                    .CommandText = "dbo.smc_InsAuthUpdateReceive"
-                    .CommandType = CommandType.StoredProcedure
-                    .Parameters.Clear()
 
-                    .Parameters.AddWithValue("@InsID", Id)
-                    .Parameters.AddWithValue("@positionNum", position)
-                    .Parameters.AddWithValue("@AuthCode", Authcode)
-                    .Parameters.AddWithValue("@fromDate", fromDate)
-                    .Parameters.AddWithValue("@toDate", toDate)
-                    If dreader.HasRows Then 'Update   
-                        .Parameters.AddWithValue("@insert", "Update")
-                    Else 'Insert
-                        .Parameters.AddWithValue("@insert", "Insert")
-                    End If
+                    Dim IN114 As String = dictNVP("AuthNum")
+                    Dim IN114array() = IN114.Split("~")
+                    Dim position As Integer
+                    Dim fromDate = DBNull.Value
+                    Dim toDate = DBNull.Value
+                    Dim Authcode = DBNull.Value
+                    For Each value As String In IN114array
+                        position += 1
+                        Dim valueArray() = value.Split("^")
 
-                Next
-            End With
-        End Using
+                        If position = 1 Then
+                            Authcode = valueArray(2)
+                        Else
+                            If valueArray(0) <> "" Then
+                                Authcode = valueArray(0)
+                            End If
+                            If value(1) <> "" Then
+                                fromDate = valueArray(1)
+                            End If
+                            If value(2) <> "" Then
+                                toDate = valueArray(2)
+                            End If
+                        End If
+                        .CommandText = "dbo.smc_InsAuthUpdateReceive"
+                        .CommandType = CommandType.StoredProcedure
+                        .Parameters.Clear()
+                        .Parameters.AddWithValue("@InsID", ID)
+                        .Parameters.AddWithValue("@positionNum", position)
+                        .Parameters.AddWithValue("@AuthCode", Authcode)
+                        .Parameters.AddWithValue("@fromDate", fromDate)
+                        .Parameters.AddWithValue("@toDate", toDate)
+                        .Parameters.AddWithValue("@insert", True)
+
+                        objDBCommand3.ExecuteNonQuery()
+
+                    Next
+                End With
+
+            End Using
+        End If
     End Sub
 
 End Module
