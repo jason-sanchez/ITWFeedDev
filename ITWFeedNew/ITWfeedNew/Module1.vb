@@ -127,9 +127,9 @@ Module Module1
 
 
     'Public objIniFile As New INIFile("d:\W3Production\HL7Mapper.ini") '20140817
-    'Public objIniFile As New INIFile("C:\W3Feeds\HL7Mapper.ini") '20140817
+    Public objIniFile As New INIFile("C:\W3Feeds\HL7Mapper.ini") '20140817
     'Public objIniFile As New INIFile("C:\W3Feeds\HL7Mapper.ini")
-    Public objIniFile As New INIFile("C:\KY1 Test Environment\HL7Mapper.ini") '20140817
+    'Public objIniFile As New INIFile("C:\KY1 Test Environment\HL7Mapper.ini") '20140817
     Dim strInputDirectory As String = ""
     Dim strOutputDirectory As String = ""
     '20140205 - add log file location
@@ -4034,7 +4034,7 @@ Module Module1
         Dim objDBCommand2 As New SqlCommand
         Dim objDBCommand3 As New SqlCommand
         Dim dreader As SqlDataReader
-        Dim dreader2 As SqlDataReader
+        'Dim dreader2 As SqlDataReader
         Dim sql As String = ""
 
         Dim plancode As String = dictNVP.Item("iplancode")
@@ -4090,13 +4090,16 @@ Module Module1
                     Dim fromDate = DBNull.Value
                     Dim toDate = DBNull.Value
                     Dim Authcode = DBNull.Value
+                    Dim valueArray() As String
                     For Each value As String In IN114array
                         position += 1
-                        Dim valueArray() = value.Split("^")
+
 
                         If position = 1 Then
-                            Authcode = valueArray(2)
+                            Authcode = Replace(value, "^", "")
+
                         Else
+                            valueArray = value.Split("^")
                             If valueArray(0) <> "" Then
                                 Authcode = valueArray(0)
                             End If
