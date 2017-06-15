@@ -772,6 +772,8 @@ Module Module1
                     intIntakeFacility = 200
                 Case "H" 'SIRH
                     intIntakeFacility = 300
+                Case "T" 'ULH
+                    intIntakeFacility = 400
             End Select
             '=====================================================================================================
             '12/07/2004 add processing for aro, jhhs mrnum, allergies, advance directive, referral source ID
@@ -3715,7 +3717,8 @@ Module Module1
         '20140321 - added use of extractMrnum to this function only.
         '20140915 - modified search in processAL1
         '20140916 - capture all AL1 data
-        Dim A31connectionString As String = "server=10.48.242.249,1433;database=PatientGlobal;uid=sysmax;pwd=Condor!"
+        'Dim A31connectionString As String = "server=10.48.242.249,1433;database=PatientGlobal;uid=sysmax;pwd=Condor!"
+        Dim A31connectionString As String = "server=10.48.64.5\sqlexpress;database=PatientGlobal;uid=sysmax;pwd=Condor!"
         'connectionString = "server=HPLAPTOP;database=STAR_ITW;uid=sa;pwd=b436328"
         Dim myConnection As New SqlConnection(A31connectionString)
         Dim objCommand As New SqlCommand
