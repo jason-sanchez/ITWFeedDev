@@ -523,7 +523,7 @@ Module Module1
                     updatecommand.ExecuteNonQuery()
                     myConnection.Close()
 
-                    ProcessIN1_14(dictNVP)
+                    ProcessIN1_14(dictNVP, tempStr)
                 End If 'If Not iplancodeExists
                 '20170510 - Removed AuthNum Process using Process IN1_14
 
@@ -2783,9 +2783,9 @@ Module Module1
                                 updatecommand.ExecuteNonQuery()
                                 myConnection.Close()
 
-                                If i < 2 Then
-                                    ProcessIN1_14(dictNVP)
-                                End If
+                                'If i < 2 Then
+                                ProcessIN1_14(dictNVP, tempstr)
+                                'End If
 
                             Else                'iPlancode does not exist
 
@@ -4032,196 +4032,198 @@ Module Module1
     End Sub
 
     '20170329
-    Public Sub ProcessIN1_14(ByVal dictNVP As Hashtable)
-        Dim Int As Integer
-        Dim tempStr As String = ""
-        For Int = 1 To gblInsCount
-            'If Int = 1 Then
-            'tempStr = ""
-            'End If
-            If Int > 1 Then
-                tempStr = "_000" & Int
-            End If
+    Public Sub ProcessIN1_14(ByVal dictNVP As Hashtable, ByVal tempstr As String)
+        'Dim Int As Integer
+        'Dim tempStr As String = ""
+        'For Int = 1 To gblInsCount
+        'If Int = 1 Then
+        'tempStr = ""
+        'End If
+        'If Int > 1 Then
+        'tempstr = "_000" & Int
+        'End If
 
-            'check to see if records exist
-            'Call dbo.smc_InsAuthSelect
-            'result contains rows update else insert
-            Dim objDBCommand As New SqlCommand
-            Dim objDBCommand2 As New SqlCommand
-            Dim objDBCommand3 As New SqlCommand
-            Dim objDBCommand4 As New SqlCommand
-            Dim dreader As SqlDataReader
-            'Dim dreader2 As SqlDataReader
-            Dim sql As String = ""
-            Dim IN114array()
-            'STAR_Plancode = Trim(Replace(dictNVP("iplancode2" & tempStr), "'", "''")) & Trim(Replace(dictNVP("iplancode" & tempStr), "'", "''"))
+        'check to see if records exist
+        'Call dbo.smc_InsAuthSelect
+        'result contains rows update else insert
+        Dim objDBCommand As New SqlCommand
+        Dim objDBCommand2 As New SqlCommand
+        Dim objDBCommand3 As New SqlCommand
+        Dim objDBCommand4 As New SqlCommand
+        Dim dreader As SqlDataReader
+        'Dim dreader2 As SqlDataReader
+        Dim sql As String = ""
+        Dim IN114array()
+        'STAR_Plancode = Trim(Replace(dictNVP("iplancode2" & tempStr), "'", "''")) & Trim(Replace(dictNVP("iplancode" & tempStr), "'", "''"))
 
-            Dim plancode As String = dictNVP.Item("iplancode" & tempStr)
-            Dim plancode2 As String = dictNVP.Item("iplancode2" & tempStr)
-            Dim fullcode As String = plancode2 & plancode
-            Dim panum As String = dictNVP.Item("panum" & tempStr)
-            Dim I As String = ""
-            Dim ID As Integer
-            Dim insert As Boolean = True
+        Dim plancode As String = dictNVP.Item("iplancode" & tempstr)
+        Dim plancode2 As String = dictNVP.Item("iplancode2" & tempstr)
+        Dim fullcode As String = plancode2 & plancode
+        Dim panum As String = dictNVP.Item("panum")
+        Dim I As String = ""
+        Dim ID As Integer
+        Dim insert As Boolean = True
 
+        Using conn As New SqlConnection(connectionString)
+            With objDBCommand
+
+                .Connection = conn
+                .Connection.Open()
+
+                sql = "Select ID "
+                sql += " FROM [03Insurer] i "
+                sql += " INNER JOIN [001Episode] e on e.epnum  = i.epnum "
+                sql += " WHERE i.iplancode = '" & fullcode & "' "
+                sql += " and e.panum = '" & panum & "'"
+                .CommandText = sql
+                dreader = objDBCommand.ExecuteReader()
+                While dreader.Read
+                    I = dreader("ID")
+                End While
+
+            End With
+        End Using
+        If I <> "" Then
             Using conn As New SqlConnection(connectionString)
-                With objDBCommand
-
+                ID = Convert.ToInt32(I)
+                With objDBCommand2
                     .Connection = conn
                     .Connection.Open()
 
-                    sql = "Select ID "
-                    sql += " FROM [03Insurer] i "
-                    sql += " INNER JOIN [001Episode] e on e.epnum  = i.epnum "
-                    sql += " WHERE i.iplancode = '" & fullcode & "' "
-                    sql += " and e.panum = '" & panum & "'"
+                    sql += "DELETE FROM [03InsAuthReceive] "
+                    sql += " WHERE INSID = '" & ID & "' "
                     .CommandText = sql
-                    dreader = objDBCommand.ExecuteReader()
-                    While dreader.Read
-                        I = dreader("ID")
-                    End While
-
+                    objDBCommand2.ExecuteNonQuery()
                 End With
             End Using
-            If I <> "" Then
-                Using conn As New SqlConnection(connectionString)
-                    ID = Convert.ToInt32(I)
-                    With objDBCommand2
-                        .Connection = conn
-                        .Connection.Open()
 
-                        sql += "DELETE FROM [03InsAuthReceive] "
-                        sql += " WHERE INSID = '" & ID & "' "
-                        .CommandText = sql
-                        objDBCommand2.ExecuteNonQuery()
-                    End With
-                End Using
+            Using conn As New SqlConnection(connectionString)
+                With objDBCommand3
+                    .Connection = conn
+                    .Connection.Open()
 
-                Using conn As New SqlConnection(connectionString)
-                    With objDBCommand3
-                        .Connection = conn
-                        .Connection.Open()
+                    'Dim position As Integer
+                    Dim fromDate = DBNull.Value
+                    Dim toDate = DBNull.Value
+                    Dim Authcode = DBNull.Value
+                    Dim IN114 As String = dictNVP("AuthNum" & tempstr)
+                    IN114array = IN114.Split("^")
 
-                        'Dim position As Integer
+                    If IN114array(0) <> "" Then
+                        Authcode = IN114array(0)
+                    End If
+
+                    .CommandText = "dbo.smc_InsAuthUpdateReceive"
+                    .CommandType = CommandType.StoredProcedure
+                    .Parameters.Clear()
+                    .Parameters.AddWithValue("@InsID", ID)
+                    .Parameters.AddWithValue("@positionNum", 1)
+                    .Parameters.AddWithValue("@AuthCode", Authcode)
+                    .Parameters.AddWithValue("@fromDate", fromDate)
+                    .Parameters.AddWithValue("@toDate", toDate)
+                    .Parameters.AddWithValue("@insert", True)
+
+                    objDBCommand3.ExecuteNonQuery()
+
+                End With
+
+            End Using
+
+
+            Using conn As New SqlConnection(connectionString)
+                With objDBCommand4
+                    .Connection = conn
+                    .Connection.Open()
+
+                    Dim ZGI2 As String = dictNVP("Additional Auths" & tempstr)
+                    Dim ZGI() = ZGI2.Split("~")
+                    Dim position As Integer = 1
+
+                    Dim valueArray() As String
+                    For Each value As String In ZGI
                         Dim fromDate = DBNull.Value
                         Dim toDate = DBNull.Value
                         Dim Authcode = DBNull.Value
-                        Dim IN114 As String = dictNVP("AuthNum" & tempStr)
-                        IN114array = IN114.Split("^")
 
-                        If IN114array(0) <> "" Then
-                            Authcode = IN114array(0)
+                        position += 1
+
+                        valueArray = value.Split("^")
+                        If valueArray(0) <> "" Then
+                            Authcode = valueArray(0)
+                        End If
+                        If valueArray(1) <> "" Then
+                            fromDate = valueArray(1)
+                        End If
+                        If valueArray(2) <> "" Then
+                            toDate = valueArray(2)
                         End If
 
                         .CommandText = "dbo.smc_InsAuthUpdateReceive"
                         .CommandType = CommandType.StoredProcedure
                         .Parameters.Clear()
                         .Parameters.AddWithValue("@InsID", ID)
-                        .Parameters.AddWithValue("@positionNum", 1)
+                        .Parameters.AddWithValue("@positionNum", position)
                         .Parameters.AddWithValue("@AuthCode", Authcode)
                         .Parameters.AddWithValue("@fromDate", fromDate)
                         .Parameters.AddWithValue("@toDate", toDate)
                         .Parameters.AddWithValue("@insert", True)
 
-                        objDBCommand3.ExecuteNonQuery()
+                        objDBCommand4.ExecuteNonQuery()
 
-                    End With
+                    Next
+                End With
 
-                End Using
+            End Using
 
+            'Using conn As New SqlConnection(connectionString)
+            '    With objDBCommand3
+            '        .Connection = conn
+            '        .Connection.Open()
 
-                Using conn As New SqlConnection(connectionString)
-                    With objDBCommand4
-                        .Connection = conn
-                        .Connection.Open()
-
-                        Dim ZGI2 As String = dictNVP("Additional Auths" & tempStr)
-                        Dim ZGI() = ZGI2.Split("~")
-                        Dim position As Integer
-                        Dim fromDate = DBNull.Value
-                        Dim toDate = DBNull.Value
-                        Dim Authcode = DBNull.Value
-                        Dim valueArray() As String
-                        For Each value As String In ZGI
-                            position += 2
-
-                            valueArray = value.Split("^")
-                            If valueArray(0) <> "" Then
-                                Authcode = valueArray(0)
-                            End If
-                            If value(1) <> "" Then
-                                fromDate = valueArray(1)
-                            End If
-                            If value(2) <> "" Then
-                                toDate = valueArray(2)
-                            End If
-
-                            .CommandText = "dbo.smc_InsAuthUpdateReceive"
-                            .CommandType = CommandType.StoredProcedure
-                            .Parameters.Clear()
-                            .Parameters.AddWithValue("@InsID", ID)
-                            .Parameters.AddWithValue("@positionNum", position)
-                            .Parameters.AddWithValue("@AuthCode", Authcode)
-                            .Parameters.AddWithValue("@fromDate", fromDate)
-                            .Parameters.AddWithValue("@toDate", toDate)
-                            .Parameters.AddWithValue("@insert", True)
-
-                            objDBCommand4.ExecuteNonQuery()
-
-                        Next
-                    End With
-
-                End Using
-
-                'Using conn As New SqlConnection(connectionString)
-                '    With objDBCommand3
-                '        .Connection = conn
-                '        .Connection.Open()
-
-                '        Dim IN114 As String = dictNVP("AuthNum")
-                '        Dim IN114array() = IN114.Split("~")
-                '        Dim position As Integer
-                '        Dim fromDate = DBNull.Value
-                '        Dim toDate = DBNull.Value
-                '        Dim Authcode = DBNull.Value
-                '        Dim valueArray() As String
-                '        For Each value As String In IN114array
-                '            position += 1
+            '        Dim IN114 As String = dictNVP("AuthNum")
+            '        Dim IN114array() = IN114.Split("~")
+            '        Dim position As Integer
+            '        Dim fromDate = DBNull.Value
+            '        Dim toDate = DBNull.Value
+            '        Dim Authcode = DBNull.Value
+            '        Dim valueArray() As String
+            '        For Each value As String In IN114array
+            '            position += 1
 
 
-                '            If position = 1 Then
-                '                Authcode = Replace(value, "^", "")
+            '            If position = 1 Then
+            '                Authcode = Replace(value, "^", "")
 
-                '            Else
-                '                valueArray = value.Split("^")
-                '                If valueArray(0) <> "" Then
-                '                    Authcode = valueArray(0)
-                '                End If
-                '                If value(1) <> "" Then
-                '                    fromDate = valueArray(1)
-                '                End If
-                '                If value(2) <> "" Then
-                '                    toDate = valueArray(2)
-                '                End If
-                '            End If
-                '            .CommandText = "dbo.smc_InsAuthUpdateReceive"
-                '            .CommandType = CommandType.StoredProcedure
-                '            .Parameters.Clear()
-                '            .Parameters.AddWithValue("@InsID", ID)
-                '            .Parameters.AddWithValue("@positionNum", position)
-                '            .Parameters.AddWithValue("@AuthCode", Authcode)
-                '            .Parameters.AddWithValue("@fromDate", fromDate)
-                '            .Parameters.AddWithValue("@toDate", toDate)
-                '            .Parameters.AddWithValue("@insert", True)
+            '            Else
+            '                valueArray = value.Split("^")
+            '                If valueArray(0) <> "" Then
+            '                    Authcode = valueArray(0)
+            '                End If
+            '                If value(1) <> "" Then
+            '                    fromDate = valueArray(1)
+            '                End If
+            '                If value(2) <> "" Then
+            '                    toDate = valueArray(2)
+            '                End If
+            '            End If
+            '            .CommandText = "dbo.smc_InsAuthUpdateReceive"
+            '            .CommandType = CommandType.StoredProcedure
+            '            .Parameters.Clear()
+            '            .Parameters.AddWithValue("@InsID", ID)
+            '            .Parameters.AddWithValue("@positionNum", position)
+            '            .Parameters.AddWithValue("@AuthCode", Authcode)
+            '            .Parameters.AddWithValue("@fromDate", fromDate)
+            '            .Parameters.AddWithValue("@toDate", toDate)
+            '            .Parameters.AddWithValue("@insert", True)
 
-                '            objDBCommand3.ExecuteNonQuery()
+            '            objDBCommand3.ExecuteNonQuery()
 
-                '        Next
-                '    End With
+            '        Next
+            '    End With
 
-                'End Using
-            End If
-        Next
+            'End Using
+        End If
+        'Next
     End Sub
 
 End Module
