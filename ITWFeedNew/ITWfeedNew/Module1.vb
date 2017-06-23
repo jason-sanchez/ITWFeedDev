@@ -126,9 +126,9 @@ Module Module1
     Dim visitStatus As String = ""
 
 
-    'Public objIniFile As New INIFile("d:\W3Production\HL7Mapper.ini") '20140817 - Prod
+    Public objIniFile As New INIFile("d:\W3Production\HL7Mapper.ini") '20140817 - Prod
     'Public objIniFile As New INIFile("C:\W3Feeds\HL7Mapper.ini") '20140817 - Test
-    Public objIniFile As New INIFile("C:\KY1 Test Environment\HL7Mapper.ini") '20140817 - Local
+    'Public objIniFile As New INIFile("C:\KY1 Test Environment\HL7Mapper.ini") '20140817 - Local
     Dim strInputDirectory As String = ""
     Dim strOutputDirectory As String = ""
     '20140205 - add log file location
@@ -174,8 +174,8 @@ Module Module1
             '20121013 - new connection string to test server
             'connectionString = "server=10.48.64.6\sqlexpress;database=ITW_MC;uid=sysmax;pwd=Condor!"
             'connectionString = "server=" & strServer & ";database=ITW_MC;uid=sysmax;pwd=Condor!"
-            connectionString = "server=10.48.64.5\sqlexpress;database=ITWTest;uid=sysmax;pwd=Condor!"
-            'connectionString = "server=10.48.242.249,1433;database=ITW;uid=sysmax;pwd=Condor!" '20140817
+            'connectionString = "server=10.48.64.5\sqlexpress;database=ITWTest;uid=sysmax;pwd=Condor!"
+            connectionString = "server=10.48.242.249,1433;database=ITW;uid=sysmax;pwd=Condor!" '20140817
             'connectionString = "server=HPLAPTOP;database=STAR_ITW;uid=sa;pwd=b436328"
             'connectionString = "server=(localdb)\myInstance;database=ITW;uid=sa;pwd=password"
 
@@ -461,8 +461,8 @@ Module Module1
                     '20120429 - added star_plancode,conum and company name
                     '20140528 Added AuditNotes from ZIN_9
                     sql = sql & "(epnum, iPlanCode, iplancode2, coNum, STAR_Plancode, coname, subname, policyNum, "
-                    'sql = sql & "authNum1, theGroup, PIssue, aprimary, Fclass, AuditNotes, reqCert, " '20140528
-                    sql = sql & "theGroup, PIssue, aprimary, Fclass, AuditNotes, reqCert, " '20140528
+                    sql = sql & "authNum1, theGroup, PIssue, aprimary, Fclass, AuditNotes, reqCert, " '20140528
+                    'sql = sql & "theGroup, PIssue, aprimary, Fclass, AuditNotes, reqCert, " 'the will return for authnum7
                     '20151215 - add insuredSex and InsuredDOB
                     sql = sql & "InsuredDOB, InsuredSex,"
 
@@ -485,8 +485,8 @@ Module Module1
 
                     insertString(strSubName)
                     insertString(dictNVP.Item("PolicyNumber" & tempStr))
-                    '20170510 - Removed AuthNum Process using Process IN1_14
-                    'insertString(Replace(dictNVP.Item("AuthNum" & tempStr), "'", "''"))
+                    '20170510 - Removed AuthNum Process using Process IN1_14 for authcode project.  Leave for ULHT.
+                    insertString(Replace(dictNVP.Item("AuthNum" & tempStr), "'", "''"))
                     insertString(Replace(dictNVP("group" & tempStr), "'", "''"))
 
                     insertString(strPolicyIssueDate)
@@ -2730,10 +2730,10 @@ Module Module1
                                 If Len(dictNVP.Item("PolicyNumber" & tempstr)) > 0 Then
                                     sql = sql & ", policyNum = '" & Replace(dictNVP.Item("PolicyNumber" & tempstr), "'", "''") & "'"
                                 End If
-                                '20170510 - Removed AuthNum Process using Process IN1_14
-                                'If Len(dictNVP.Item("AuthNum" & tempstr)) > 0 Then
-                                'sql = sql & ", authnum1 = '" & Replace(dictNVP.Item("AuthNum" & tempstr), "'", "''") & "'"
-                                'End If
+                                '20170510 - Removed AuthNum Process using Process IN1_14. Left in of ULHT
+                                If Len(dictNVP.Item("AuthNum" & tempstr)) > 0 Then
+                                    sql = sql & ", authnum1 = '" & Replace(dictNVP.Item("AuthNum" & tempstr), "'", "''") & "'"
+                                End If
 
                                 '20130502 - changed name routine to handle double quotes
                                 tempstr2 = ""
@@ -3720,8 +3720,8 @@ Module Module1
         '20140321 - added use of extractMrnum to this function only.
         '20140915 - modified search in processAL1
         '20140916 - capture all AL1 data
-        'Dim A31connectionString As String = "server=10.48.242.249,1433;database=PatientGlobal;uid=sysmax;pwd=Condor!"
-        Dim A31connectionString As String = "server=10.48.64.5\sqlexpress;database=PatientGlobal;uid=sysmax;pwd=Condor!"
+        Dim A31connectionString As String = "server=10.48.242.249,1433;database=PatientGlobal;uid=sysmax;pwd=Condor!"
+        'Dim A31connectionString As String = "server=10.48.64.5\sqlexpress;database=PatientGlobal;uid=sysmax;pwd=Condor!"
         'connectionString = "server=HPLAPTOP;database=STAR_ITW;uid=sa;pwd=b436328"
         Dim myConnection As New SqlConnection(A31connectionString)
         Dim objCommand As New SqlCommand
@@ -3965,6 +3965,7 @@ Module Module1
         '20141021 - write A34 Information to PatientGlobal database, table = A34Queue
         '20141204 - add oldcorpno as MRG_2_1
         Dim A34connectionString As String = "server=10.48.242.249,1433;database=PatientGlobal;uid=sysmax;pwd=Condor!"
+        'Dim A34connectionString As String = "server=10.48.64.5\sqlexpress;database=PatientGlobal;uid=sysmax;pwd=Condor!"
         Dim myConnection As New SqlConnection(A34connectionString)
         Dim updatecommand As New SqlCommand
         updatecommand.Connection = myConnection
