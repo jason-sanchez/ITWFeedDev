@@ -127,8 +127,8 @@ Module Module1
 
 
     'Public objIniFile As New INIFile("d:\W3Production\HL7Mapper.ini") '20140817 - Prod
-    Public objIniFile As New INIFile("C:\W3Feeds\HL7Mapper.ini") '20140817 - Test
-    'Public objIniFile As New INIFile("C:\KY1 Test Environment\HL7Mapper.ini") '20140817 - Local
+    'Public objIniFile As New INIFile("C:\W3Feeds\HL7Mapper.ini") '20140817 - Test
+    Public objIniFile As New INIFile("C:\KY1 Test Environment\HL7Mapper.ini") '20140817 - Local
     Dim strInputDirectory As String = ""
     Dim strOutputDirectory As String = ""
     '20140205 - add log file location
@@ -521,8 +521,8 @@ Module Module1
                     myConnection.Open()
                     updatecommand.ExecuteNonQuery()
                     myConnection.Close()
-
-                    ProcessIN1_14(dictNVP, tempStr)
+                    '20170623 Process IN1_14 and ZGI for multiple authcodes
+                    'ProcessIN1_14(dictNVP, tempStr)
                 End If 'If Not iplancodeExists
                 '20170510 - Removed AuthNum Process using Process IN1_14
 
@@ -771,7 +771,7 @@ Module Module1
                     intIntakeFacility = 200
                 Case "H" 'SIRH
                     intIntakeFacility = 300
-                Case "T" 'ULH
+                Case "T" '20170623 - ULH
                     intIntakeFacility = 400
             End Select
             '=====================================================================================================
@@ -2782,9 +2782,9 @@ Module Module1
                                 updatecommand.ExecuteNonQuery()
                                 myConnection.Close()
 
-                                'If i < 2 Then
-                                ProcessIN1_14(dictNVP, tempstr)
-                                'End If
+                                '20170623 Process IN1_14 and ZGI for multiple authcodes
+                                'ProcessIN1_14(dictNVP, tempstr)
+
 
                             Else                'iPlancode does not exist
 
@@ -3910,6 +3910,10 @@ Module Module1
                 Case "A13"
                     If dictNVP.Item("Sending Facility") = "Q" And dictNVP.Item("Patient Class") = "O" Then strNewStatus = "OA"
                     If dictNVP.Item("Sending Facility") = "Q" And dictNVP.Item("Patient Class") = "R" Then strNewStatus = "OA"
+                    '20170623 - Add T for ULHT
+                    If dictNVP.Item("Sending Facility") = "T" And dictNVP.Item("Patient Class") = "O" Then strNewStatus = "OA"
+                    If dictNVP.Item("Sending Facility") = "T" And dictNVP.Item("Patient Class") = "R" Then strNewStatus = "OA"
+
                     If dictNVP.Item("Sending Facility") = "R" And dictNVP.Item("Patient Class") = "I" Then strNewStatus = "IA"
                     If dictNVP.Item("Sending Facility") = "H" And dictNVP.Item("Patient Class") = "I" Then strNewStatus = "IA"
 
