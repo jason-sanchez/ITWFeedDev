@@ -126,8 +126,8 @@ Module Module1
     Dim visitStatus As String = ""
 
 
-    Public objIniFile As New INIFile("d:\W3Production\HL7Mapper.ini") '20140817 - Prod
-    'Public objIniFile As New INIFile("C:\W3Feeds\HL7Mapper.ini") '20140817 - Test
+    'Public objIniFile As New INIFile("d:\W3Production\HL7Mapper.ini") '20140817 - Prod
+    Public objIniFile As New INIFile("C:\W3Feeds\HL7Mapper.ini") '20140817 - Test
     'Public objIniFile As New INIFile("C:\KY1 Test Environment\HL7Mapper.ini") '20140817 - Local
     Dim strInputDirectory As String = ""
     Dim strOutputDirectory As String = ""
@@ -174,8 +174,8 @@ Module Module1
             '20121013 - new connection string to test server
             'connectionString = "server=10.48.64.6\sqlexpress;database=ITW_MC;uid=sysmax;pwd=Condor!"
             'connectionString = "server=" & strServer & ";database=ITW_MC;uid=sysmax;pwd=Condor!"
-            'connectionString = "server=10.48.64.5\sqlexpress;database=ITWTest;uid=sysmax;pwd=Condor!"
-            connectionString = "server=10.48.242.249,1433;database=ITW;uid=sysmax;pwd=Condor!" '20140817
+            connectionString = "server=10.48.64.5\sqlexpress;database=ITWTest;uid=sysmax;pwd=Condor!"
+            'connectionString = "server=10.48.242.249,1433;database=ITW;uid=sysmax;pwd=Condor!" '20140817
             'connectionString = "server=HPLAPTOP;database=STAR_ITW;uid=sa;pwd=b436328"
             'connectionString = "server=(localdb)\myInstance;database=ITW;uid=sa;pwd=password"
 
@@ -522,7 +522,7 @@ Module Module1
                     updatecommand.ExecuteNonQuery()
                     myConnection.Close()
                     '20170623 Process IN1_14 and ZGI for multiple authcodes
-                    'ProcessIN1_14(dictNVP, tempStr)
+                    ProcessIN1_14(dictNVP, tempStr)
                 End If 'If Not iplancodeExists
                 '20170510 - Removed AuthNum Process using Process IN1_14
 
@@ -2783,7 +2783,7 @@ Module Module1
                                 myConnection.Close()
 
                                 '20170623 Process IN1_14 and ZGI for multiple authcodes
-                                'ProcessIN1_14(dictNVP, tempstr)
+                                ProcessIN1_14(dictNVP, tempstr)
 
 
                             Else                'iPlancode does not exist
@@ -3720,8 +3720,8 @@ Module Module1
         '20140321 - added use of extractMrnum to this function only.
         '20140915 - modified search in processAL1
         '20140916 - capture all AL1 data
-        Dim A31connectionString As String = "server=10.48.242.249,1433;database=PatientGlobal;uid=sysmax;pwd=Condor!"
-        'Dim A31connectionString As String = "server=10.48.64.5\sqlexpress;database=PatientGlobal;uid=sysmax;pwd=Condor!"
+        'Dim A31connectionString As String = "server=10.48.242.249,1433;database=PatientGlobal;uid=sysmax;pwd=Condor!"
+        Dim A31connectionString As String = "server=10.48.64.5\sqlexpress;database=PatientGlobal;uid=sysmax;pwd=Condor!"
         'connectionString = "server=HPLAPTOP;database=STAR_ITW;uid=sa;pwd=b436328"
         Dim myConnection As New SqlConnection(A31connectionString)
         Dim objCommand As New SqlCommand
@@ -3964,8 +3964,8 @@ Module Module1
     Public Sub ProcessA34(ByVal dictNVP As Hashtable)
         '20141021 - write A34 Information to PatientGlobal database, table = A34Queue
         '20141204 - add oldcorpno as MRG_2_1
-        Dim A34connectionString As String = "server=10.48.242.249,1433;database=PatientGlobal;uid=sysmax;pwd=Condor!"
-        'Dim A34connectionString As String = "server=10.48.64.5\sqlexpress;database=PatientGlobal;uid=sysmax;pwd=Condor!"
+        'Dim A34connectionString As String = "server=10.48.242.249,1433;database=PatientGlobal;uid=sysmax;pwd=Condor!"
+        Dim A34connectionString As String = "server=10.48.64.5\sqlexpress;database=PatientGlobal;uid=sysmax;pwd=Condor!"
         Dim myConnection As New SqlConnection(A34connectionString)
         Dim updatecommand As New SqlCommand
         updatecommand.Connection = myConnection
@@ -4140,41 +4140,72 @@ Module Module1
                     .Connection.Open()
 
                     Dim ZGI2 As String = dictNVP("Additional Auths" & tempstr)
-                    Dim ZGI() = ZGI2.Split("~")
-                    Dim position As Integer = 1
+                    If Not ZGI2 Is Nothing Then
+                        Dim ZGI() = ZGI2.Split("~")
+                        Dim position As Integer = 1
 
-                    Dim valueArray() As String
-                    For Each value As String In ZGI
-                        Dim fromDate = DBNull.Value
-                        Dim toDate = DBNull.Value
-                        Dim Authcode = DBNull.Value
+                        Dim valueArray() As String
+                        For Each value As String In ZGI
+                            Dim fromDate = DBNull.Value
+                            Dim toDate = DBNull.Value
+                            Dim Authcode = DBNull.Value
 
-                        position += 1
+                            position += 1
 
-                        valueArray = value.Split("^")
-                        If valueArray(0) <> "" Then
-                            Authcode = valueArray(0)
-                        End If
-                        If valueArray(1) <> "" Then
-                            fromDate = valueArray(1)
-                        End If
-                        If valueArray(2) <> "" Then
-                            toDate = valueArray(2)
-                        End If
+                            If value <> "" Then
 
-                        .CommandText = "dbo.smc_InsAuthUpdateReceive"
-                        .CommandType = CommandType.StoredProcedure
-                        .Parameters.Clear()
-                        .Parameters.AddWithValue("@InsID", ID)
-                        .Parameters.AddWithValue("@positionNum", position)
-                        .Parameters.AddWithValue("@AuthCode", Authcode)
-                        .Parameters.AddWithValue("@fromDate", fromDate)
-                        .Parameters.AddWithValue("@toDate", toDate)
-                        .Parameters.AddWithValue("@insert", True)
+                                Dim cnt As Integer = 0
+                                For Each c As Char In value
+                                    If c = "^" Then
+                                        cnt += 1
+                                    End If
+                                Next
 
-                        objDBCommand4.ExecuteNonQuery()
 
-                    Next
+                                If cnt = 2 Then
+                                    valueArray = value.Split("^")
+                                    If valueArray(0) <> "" Then
+                                        Authcode = valueArray(0)
+                                    End If
+                                    If valueArray(1) <> "" Then
+                                        fromDate = valueArray(1)
+                                    End If
+                                    If valueArray(2) <> "" Then
+                                        toDate = valueArray(2)
+                                    End If
+                                ElseIf cnt = 1 Then
+                                    valueArray = value.Split("^")
+                                    If valueArray(0) <> "" Then
+                                        Authcode = valueArray(0)
+                                    End If
+                                    If valueArray(1) <> "" Then
+                                        fromDate = valueArray(1)
+                                    End If
+                                ElseIf cnt = 0 Then
+                                    valueArray = value.Split("^")
+                                    If valueArray(0) <> "" Then
+                                        Authcode = valueArray(0)
+                                    End If
+
+                                End If
+
+                            End If
+
+
+                            .CommandText = "dbo.smc_InsAuthUpdateReceive"
+                            .CommandType = CommandType.StoredProcedure
+                            .Parameters.Clear()
+                            .Parameters.AddWithValue("@InsID", ID)
+                            .Parameters.AddWithValue("@positionNum", position)
+                            .Parameters.AddWithValue("@AuthCode", Authcode)
+                            .Parameters.AddWithValue("@fromDate", fromDate)
+                            .Parameters.AddWithValue("@toDate", toDate)
+                            .Parameters.AddWithValue("@insert", True)
+
+                            objDBCommand4.ExecuteNonQuery()
+
+                        Next
+                    End If
                 End With
 
             End Using
