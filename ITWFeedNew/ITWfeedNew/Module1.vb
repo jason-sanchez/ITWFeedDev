@@ -127,8 +127,13 @@ Module Module1
 
 
     'Public objIniFile As New INIFile("d:\W3Production\HL7Mapper.ini") '20140817 - Prod
-    'Public objIniFile As New INIFile("C:\W3Feeds\HL7Mapper.ini") '20140817 - Test
-    Public objIniFile As New INIFile("C:\KY1 Test Environment\HL7Mapper.ini") '20140817 - Local
+    Public objIniFile As New INIFile("C:\W3Feeds\HL7Mapper.ini") '20140817 - Test
+    'Public objIniFile As New INIFile("C:\KY1 Test Environment\HL7Mapper.ini") '20140817 - Local
+
+    'Public conIniFile As New iniFile("d:\W3Production\KY1ConnProd.ini") '20140805 Prod
+    'Public conIniFile As New INIFile("C:\KY1 Test Environment\KY1ConnDev.ini") 'Local
+    Public conIniFile As New INIFile("C:\W3Feeds\KY1ConnTest.ini") 'Test
+
     Dim strInputDirectory As String = ""
     Dim strOutputDirectory As String = ""
     '20140205 - add log file location
@@ -174,10 +179,11 @@ Module Module1
             '20121013 - new connection string to test server
             'connectionString = "server=10.48.64.6\sqlexpress;database=ITW_MC;uid=sysmax;pwd=Condor!"
             'connectionString = "server=" & strServer & ";database=ITW_MC;uid=sysmax;pwd=Condor!"
-            connectionString = "server=10.48.64.5\sqlexpress;database=ITWTest;uid=sysmax;pwd=Condor!"
+            'connectionString = "server=10.48.64.5\sqlexpress;database=ITWTest;uid=sysmax;pwd=Condor!"
             'connectionString = "server=10.48.242.249,1433;database=ITW;uid=sysmax;pwd=Condor!" '20140817
             'connectionString = "server=HPLAPTOP;database=STAR_ITW;uid=sa;pwd=b436328"
             'connectionString = "server=(localdb)\myInstance;database=ITW;uid=sa;pwd=password"
+            connectionString = conIniFile.GetString("Strings", "ITW", "(none)")
 
             Dim myConnection As New SqlConnection(connectionString)
             Dim objCommand As New SqlCommand
@@ -3721,8 +3727,10 @@ Module Module1
         '20140915 - modified search in processAL1
         '20140916 - capture all AL1 data
         'Dim A31connectionString As String = "server=10.48.242.249,1433;database=PatientGlobal;uid=sysmax;pwd=Condor!"
-        Dim A31connectionString As String = "server=10.48.64.5\sqlexpress;database=PatientGlobal;uid=sysmax;pwd=Condor!"
+        'Dim A31connectionString As String = "server=10.48.64.5\sqlexpress;database=PatientGlobal;uid=sysmax;pwd=Condor!"
         'connectionString = "server=HPLAPTOP;database=STAR_ITW;uid=sa;pwd=b436328"
+        Dim A31connectionString As String = conIniFile.GetString("Strings", "ITWA31", "(none)")
+
         Dim myConnection As New SqlConnection(A31connectionString)
         Dim objCommand As New SqlCommand
         Dim updatecommand As New SqlCommand
@@ -3965,7 +3973,9 @@ Module Module1
         '20141021 - write A34 Information to PatientGlobal database, table = A34Queue
         '20141204 - add oldcorpno as MRG_2_1
         'Dim A34connectionString As String = "server=10.48.242.249,1433;database=PatientGlobal;uid=sysmax;pwd=Condor!"
-        Dim A34connectionString As String = "server=10.48.64.5\sqlexpress;database=PatientGlobal;uid=sysmax;pwd=Condor!"
+        'Dim A34connectionString As String = "server=10.48.64.5\sqlexpress;database=PatientGlobal;uid=sysmax;pwd=Condor!"
+        Dim A34connectionString As String = conIniFile.GetString("Strings", "ITWA34", "(none)")
+
         Dim myConnection As New SqlConnection(A34connectionString)
         Dim updatecommand As New SqlCommand
         updatecommand.Connection = myConnection
