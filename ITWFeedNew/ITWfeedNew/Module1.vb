@@ -127,8 +127,8 @@ Module Module1
 
 
     'Public objIniFile As New INIFile("d:\W3Production\HL7Mapper.ini") '20140817 - Prod
-    Public objIniFile As New INIFile("C:\W3Feeds\HL7Mapper.ini") '20140817 - Test
-    'Public objIniFile As New INIFile("C:\KY1 Test Environment\HL7Mapper.ini") '20140817 - Local
+    'Public objIniFile As New INIFile("C:\W3Feeds\HL7Mapper.ini") '20140817 - Test
+    Public objIniFile As New INIFile("C:\KY1 Test Environment\HL7Mapper.ini") '20140817 - Local
     Dim strInputDirectory As String = ""
     Dim strOutputDirectory As String = ""
     '20140205 - add log file location
