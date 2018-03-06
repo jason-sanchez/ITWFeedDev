@@ -127,8 +127,9 @@ Module Module1
 
 
     Public objIniFile As New INIFile("d:\W3Production\HL7Mapper.ini") '20140817 - Prod
-    'Public objIniFile As New INIFile("C:\W3Feeds\HL7Mapper.ini") '20140817 - Test
     'Public objIniFile As New INIFile("C:\KY1 Test Environment\HL7Mapper.ini") '20140817 - Local
+    'Public objIniFile As New INIFile("C:\W3Feeds\HL7Mapper.ini") '20140817 - Test
+
 
     Public conIniFile As New INIFile("d:\W3Production\KY1ConnProd.ini") '20140805 Prod
     'Public conIniFile As New INIFile("C:\KY1 Test Environment\KY1ConnDev.ini") 'Local
@@ -235,6 +236,10 @@ Module Module1
                     myfile.Close()
 
                     Select Case dictNVP.Item("TriggerEventID")
+                        '20180305 - Move files that do not have an observation datetime to the NO OBS Datetime Folder
+                        Case "Z47"
+                            Call checkZ47(thefile, myfile)
+
                         Case "A44"
                             Call ProcessA44(dictNVP)
 
@@ -4269,6 +4274,26 @@ Module Module1
             'End Using
         End If
         'Next
+    End Sub
+
+    '20180305 - Move files that do not have an observation datetime to the NO OBS Datetime Folder
+    Private Sub checkZ47(theFile As FileInfo, myfile As StreamReader)
+        Dim newProblemDir As String = strOutputDirectory & "Z47\"
+
+        If Not Directory.Exists(newProblemDir) Then
+            Directory.CreateDirectory(newProblemDir)
+        End If
+
+        'make copy in the problems directory delete any previous ones with same name
+        Dim fi2 As FileInfo = New FileInfo(strOutputDirectory & "Z47\" & theFile.Name)
+        fi2.Delete()
+        theFile.CopyTo(strOutputDirectory & "Z47\" & theFile.Name)
+
+        'get rid of the file so it doesn't mess up the next run.
+        myfile.Close()
+        If theFile.Exists Then
+            theFile.Delete()
+        End If
     End Sub
 
 End Module
