@@ -126,14 +126,14 @@ Module Module1
     Dim visitStatus As String = ""
 
 
-    Public objIniFile As New INIFile("d:\W3Production\HL7Mapper.ini") '20140817 - Prod
+    'Public objIniFile As New INIFile("d:\W3Production\HL7Mapper.ini") '20140817 - Prod
     'Public objIniFile As New INIFile("C:\KY1 Test Environment\HL7Mapper.ini") '20140817 - Local
-    'Public objIniFile As New INIFile("C:\W3Feeds\HL7Mapper.ini") '20140817 - Test
+    Public objIniFile As New INIFile("C:\W3Feeds\HL7Mapper.ini") '20140817 - Test
 
 
-    Public conIniFile As New INIFile("d:\W3Production\KY1ConnProd.ini") '20140805 Prod
+    'Public conIniFile As New INIFile("d:\W3Production\KY1ConnProd.ini") '20140805 Prod
     'Public conIniFile As New INIFile("C:\KY1 Test Environment\KY1ConnDev.ini") 'Local
-    'Public conIniFile As New INIFile("C:\W3Feeds\KY1ConnTest.ini") 'Test
+    Public conIniFile As New INIFile("C:\W3Feeds\KY1ConnTest.ini") 'Test
 
     Dim strInputDirectory As String = ""
     Dim strOutputDirectory As String = ""
@@ -784,6 +784,8 @@ Module Module1
                     intIntakeFacility = 300
                 Case "T" '20170623 - ULH
                     intIntakeFacility = 400
+                Case "J" '20180918 - Eastern Market
+                    intIntakeFacility = 500
             End Select
             '=====================================================================================================
             '12/07/2004 add processing for aro, jhhs mrnum, allergies, advance directive, referral source ID
