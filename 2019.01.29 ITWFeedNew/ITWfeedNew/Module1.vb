@@ -126,14 +126,14 @@ Module Module1
     Dim visitStatus As String = ""
 
 
-    'Public objIniFile As New INIFile("d:\W3Production\HL7Mapper.ini") '20140817 - Prod
+    Public objIniFile As New INIFile("d:\W3Production\HL7Mapper.ini") '20140817 - Prod
     'Public objIniFile As New INIFile("C:\KY1 Test Environment\HL7Mapper.ini") '20140817 - Local
-    Public objIniFile As New INIFile("C:\W3Feeds\HL7Mapper.ini") '20140817 - Test
+    'Public objIniFile As New INIFile("C:\W3Feeds\HL7Mapper.ini") '20140817 - Test
 
 
-    'Public conIniFile As New INIFile("d:\W3Production\KY1ConnProd.ini") '20140805 Prod
+    Public conIniFile As New INIFile("d:\W3Production\KY1ConnProd.ini") '20140805 Prod
     'Public conIniFile As New INIFile("C:\KY1 Test Environment\KY1ConnDev.ini") 'Local
-    Public conIniFile As New INIFile("C:\W3Feeds\KY1ConnTest.ini") 'Test
+    'Public conIniFile As New INIFile("C:\W3Feeds\KY1ConnTest.ini") 'Test
 
     Dim strInputDirectory As String = ""
     Dim strOutputDirectory As String = ""
@@ -193,6 +193,12 @@ Module Module1
             objCommand.Connection = myConnection
 
             For Each dir In dirs
+
+                orphanFound = False '1/7/2019 - set to false so there is a string of orphans followed by an a31 they are not sent to orphans
+                functionError = False '1/29/2019 - Set false so other messages are not tagged this way.  Same as orphans.
+                dbError = False '1/29/2019 - Set false so other messages are not tagged this way.  Same as orphans.
+                globalError = False '1/29/2019 - Set false so other messages are not tagged this way.  Same as orphans.
+
                 thefile = New FileInfo(dir)
                 If thefile.Extension <> ".$#$" Then
                     '1.set up the streamreader to get a file
@@ -223,7 +229,7 @@ Module Module1
 
                         gblLogString = gblLogString & "Dictionary Error" & " - " & thefile.Name & vbCrLf
                         gblLogString = gblLogString & ex.Message & vbCrLf
-                        writeToLog(gblLogString, 1)
+                        writeTolog(gblLogString, 1)
                         'get rid of the file so it doesn't mess up the next run.
                         myfile.Close()
                         If thefile.Exists Then
@@ -778,14 +784,14 @@ Module Module1
             intIntakeFacility = 0
             'End If
             Select Case UCase(dictNVP("Sending Facility"))
-                Case "Q", "R" 'Q = frazier out; R = frazier in
+                Case "Q", "R", "J" 'Q = frazier out; R = frazier in
                     intIntakeFacility = 200
                 Case "H" 'SIRH
                     intIntakeFacility = 300
                 Case "T" '20170623 - ULH
                     intIntakeFacility = 400
-                Case "J" '20180918 - Eastern Market
-                    intIntakeFacility = 500
+                    'Case "J" '20180918 - Eastern Market
+                    '    intIntakeFacility = 500
             End Select
             '=====================================================================================================
             '12/07/2004 add processing for aro, jhhs mrnum, allergies, advance directive, referral source ID
@@ -3925,6 +3931,10 @@ Module Module1
                 Case "A13"
                     If dictNVP.Item("Sending Facility") = "Q" And dictNVP.Item("Patient Class") = "O" Then strNewStatus = "OA"
                     If dictNVP.Item("Sending Facility") = "Q" And dictNVP.Item("Patient Class") = "R" Then strNewStatus = "OA"
+
+                    If dictNVP.Item("Sending Facility") = "J" And dictNVP.Item("Patient Class") = "O" Then strNewStatus = "OA"
+                    If dictNVP.Item("Sending Facility") = "J" And dictNVP.Item("Patient Class") = "R" Then strNewStatus = "OA"
+
                     '20170623 - Add T for ULHT
                     If dictNVP.Item("Sending Facility") = "T" And dictNVP.Item("Patient Class") = "O" Then strNewStatus = "OA"
                     If dictNVP.Item("Sending Facility") = "T" And dictNVP.Item("Patient Class") = "R" Then strNewStatus = "OA"
@@ -4018,30 +4028,60 @@ Module Module1
         '20150916 - write A44 Information to PatientGlobal database, table = A44Queue
         '20150929 - convert panum fields to nvarchar from bigint
         '20150929 - added to production ITW feed.
-        Dim myConnection As New SqlConnection(connectionString)
-        Dim objCommand As New SqlCommand
-        Dim updatecommand As New SqlCommand
-        updatecommand.Connection = myConnection
-        Dim sql As String = ""
 
+        Dim sql As String = ""
         Dim strMrNum As String = dictNVP.Item("mrnum")
         Dim strOldPanum As String = dictNVP.Item("oldPaNum") '20150917 fixed spelling error
         Dim strPanum As String = dictNVP.Item("panum")
         Dim strRegion As String = UCase(dictNVP("Sending Facility"))
 
+        Dim recordexists As Boolean = False
 
         Try
-            If strMrNum <> "" And strOldPanum <> "" And strPanum <> "" Then
-                sql = "Insert [A44Queue] "
-                sql = sql & "(facility, mrnum, NewPanum, OldPanum,  RequestedDate) "
-                sql = sql & "VALUES ("
-                sql = sql & "'" & strRegion & "', " & strMrNum & ", '" & strPanum & "', '" & strOldPanum & "', "
-                sql = sql & "'" & DateTime.Now & "') "
-                updatecommand.CommandText = sql
-                myConnection.Open()
-                updatecommand.ExecuteNonQuery()
-                myConnection.Close()
+            Using connect As New SqlConnection(connectionString)
+                Dim objdbcommand As New SqlCommand
+                Dim dataReader As SqlDataReader
+                With objdbcommand
+
+                    .Connection = connect
+                    .Connection.Open()
+
+                    'check for duplicate A44
+                    sql = " SELECT ID "
+                    sql = sql & " FROM [A44Queue] "
+                    sql = sql & " WHERE NewPanum = '" & strPanum & "' "
+                    sql = sql & " AND OldPanum = '" & strOldPanum & "' "
+                    .CommandText = sql
+                    dataReader = objdbcommand.ExecuteReader()
+
+                    If dataReader.HasRows Then
+                        recordexists = True
+                    End If
+
+                End With
+            End Using
+
+            If strMrNum <> "" AndAlso strOldPanum <> "" AndAlso strPanum <> "" AndAlso Not recordexists Then
+
+                Using insertconnect As New SqlConnection(connectionString)
+                    Dim insertcommand As New SqlCommand
+                    With insertcommand
+                        .Connection = insertconnect
+                        .Connection.Open()
+
+                        sql = "Insert [A44Queue] "
+                        sql = sql & "(facility, mrnum, NewPanum, OldPanum,  RequestedDate) "
+                        sql = sql & "VALUES ("
+                        sql = sql & "'" & strRegion & "', " & strMrNum & ", '" & strPanum & "', '" & strOldPanum & "', "
+                        sql = sql & "'" & DateTime.Now & "') "
+                        .CommandText = sql
+                        .ExecuteNonQuery()
+
+                    End With
+                End Using
+
             End If
+
         Catch ex As Exception
             functionError = True
             gblLogString = gblLogString & "A44 Process Error" & vbCrLf
